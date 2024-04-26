@@ -99,7 +99,6 @@ public class AppTest
         js.executeScript("window.scrollBy(0, 2000)");
         driver.findElement(By.linkText("JOIN REWARDS")).click();
         String msg = driver.switchTo().frame(driver.findElement(By.xpath("/html/body/div[7]/div/iframe"))).findElement(By.xpath("//*[@id=\"dialog-title\"]")).getText();
-       // assertEquals(msg, "Sign in or Create an Account");
        File screenshotFile = ((TakesScreenshot) driver).getScreenshotAs(OutputType.FILE);
         FileUtils.copyFile(screenshotFile, new File("screenshot1.png"));
         if (msg.equals("Sign in or Create an Account")) {
