@@ -1,89 +1,86 @@
 package com.example;
 
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.IOException;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
-import org.apache.commons.io.FileUtils;
-import org.apache.log4j.Logger;
-import org.apache.log4j.PropertyConfigurator;
-import org.apache.poi.xssf.usermodel.XSSFRow;
+import java.io.FileInputStream;
+import java.time.Duration;
+
 import org.apache.poi.xssf.usermodel.XSSFSheet;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
+import org.bouncycastle.crypto.prng.drbg.DualECPoints;
 import org.openqa.selenium.By;
-import org.openqa.selenium.OutputType;
-import org.openqa.selenium.TakesScreenshot;
+import org.openqa.selenium.JavascriptException;
+import org.openqa.selenium.JavascriptExecutor;
 import org.openqa.selenium.WebDriver;
+import org.openqa.selenium.WebElement;
 import org.openqa.selenium.chrome.ChromeDriver;
+import org.openqa.selenium.devtools.idealized.Javascript;
+import org.openqa.selenium.interactions.Action;
 import org.openqa.selenium.interactions.Actions;
+import org.openqa.selenium.support.ui.ExpectedConditions;
+import org.openqa.selenium.support.ui.WebDriverWait;
+import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.BeforeTest;
 import org.testng.annotations.Test;
 
-import com.aventstack.extentreports.ExtentReports;
-import com.aventstack.extentreports.ExtentTest;
-import com.aventstack.extentreports.reporter.ExtentSparkReporter;
-
-import io.github.bonigarcia.wdm.WebDriverManager;
 
 public class AppTest 
 {
     WebDriver driver;
-    ExtentReports reports;
-    ExtentTest test;
-    Logger logger=Logger.getLogger(AppTest.class);
-    @BeforeTest
-    public void setup() {
-        reports = new ExtentReports();
-        ExtentSparkReporter spark = new ExtentSparkReporter(
-                "C:\\Users\\91701\\Desktop\\it sckcet\\softwareTesting-1\\ExtentReports\\exercise1\\report.html");
-        reports.attachReporter(spark);
-        test = reports.createTest("Demo Result");
-        WebDriverManager.chromedriver().setup();
-        driver = new ChromeDriver();
-        PropertyConfigurator.configure("C:\\Users\\91701\\Desktop\\cc2softwaretesting\\src\\test\\java\\com\\resources\\log4j.properties");
-    }
+    JavascriptExecutor js;
+    WebDriverWait wait;
+
     @BeforeMethod
-    public void navigateUrl() {
-        driver.navigate().to("https://www.barnesandnoble.com/");
+    public void setup() throws Exception{
+        driver = new ChromeDriver();
+        driver.get("https://www.barnesandnoble.com/");
+        driver.manage().timeouts().implicitlyWait(Duration.ofSeconds(5));
     }
-    @Test(priority = 0) 
-    public void testCase1() throws IOException, InterruptedException {
-        driver.findElement(By.xpath("//*[@id=\"rhf_header_element\"]/nav/div/div[3]/form/div/div[1]/a")).click();
-        driver.findElement(By.linkText("Books")).click();
-        FileInputStream fs = new FileInputStream("\"D:\\input for websites.xlsx\"");
-        XSSFWorkbook work = new XSSFWorkbook(fs);
-        XSSFSheet sheet = work.getSheet("Bank login");
-        XSSFRow row = sheet.getRow(6);
-        String input = row.getCell(0).getStringCellValue();
-        driver.findElement(By.xpath("//*[@id=\"rhf_header_element\"]/nav/div/div[3]/form/div/div[2]/div/input[1]")).sendKeys(input);
-        driver.findElement(By.xpath("//*[@id=\"rhf_header_element\"]/nav/div/div[3]/form/div/span/button")).click();
-        Thread.sleep(5000);
-        String name = driver.findElement(By.xpath("//*[@id=\"searchGrid\"]/div/section[1]/section[1]/div/div[1]/div[1]/h1")).getText();
-        if(name.contains("Chetan Bhagat")) {
-            logger.info("The text contains Chetan Bhagat");
-        }
-        else {
-            logger.error("The text doesnot contains Chetan Bhagat");
-        }
-    }
+
     @Test(priority = 1)
-    public void testCase2() throws InterruptedException {
+    public void TestCase1() throws Exception{
+        FileInputStream fis = new FileInputStream("D:\\Software Testing\\credentails.xlsx");
+        String author = new XSSFWorkbook(fis).getSheet("cc2Sheet").getRow(1).getCell(0).getStringCellValue();
+        driver.findElement(By.linkText("All")).click();
+        driver.findElement(By.linkText("Books")).click();
+        driver.findElement(By.xpath("//*[@id='rhf_header_element']/nav/div/div[3]/form/div/div[2]/div/input[1]")).sendKeys(author);
+        driver.findElement(By.xpath("//*[@id='rhf_header_element']/nav/div/div[3]/form/div/span/button")).click();
+        assertTrue(driver.getPageSource().contains("Chetan Bhagat"));
+    }
+
+    @Test(priority=2)
+    public void TestCase2() throws Exception{
+        wait = new WebDriverWait(driver, Duration.ofSeconds(10));
         Actions action = new Actions(driver);
-        action.moveToElement(driver.findElement(By.xpath("//*[@id=\"rhfCategoryFlyout_Audiobooks\"]")));
-        driver.findElement(By.xpath("//*[@id=\"navbarSupportedContent\"]/div/ul/li[5]/div/div/div[1]/div/div[2]/div[1]/dd/a[1]")).click();
-        Thread.sleep(2000);
-        driver.findElement(By.xpath("//*[@id=\"addToBagForm_2940159543998\"]/input[11]")).click();
+        action.moveToElement(driver.findElement(By.linkText("Audiobooks"))).perform();
+        driver.findElement(By.linkText("Audiobooks Top 100")).click();
+        js = (JavascriptExecutor) driver;
+        js.executeScript("window.scrollBy(0, 100)");
+        driver.findElement(By.linkText("Funny Story")).click();
+        js.executeScript("window.scrollBy(0, 300)");
+        driver.findElement(By.xpath("//*[@id='commerce-zone']/div[2]/ul/li[2]/div/div/label/span")).click();
+        wait.until(ExpectedConditions.visibilityOfElementLocated(By.xpath("//*[@id=\"find-radio-checked\"]/div[1]/form/input[5]"))).click();
+        String msg = wait.until(ExpectedConditions.visibilityOfElementLocated(By.xpath("//*[@id=\"dialog-title\"]/em/div"))).getText();
+        assertEquals(msg, "Item Successfully Added To Your Cart"); 
     }
-    @Test(priority = 2)
-    public void testCase3() throws InterruptedException, IOException {
-        driver.findElement(By.xpath("//*[@id=\"footer\"]/div/dd/div/div/div[1]/div/a[5]")).click();
-        Thread.sleep(2000);
-        driver.findElement(By.xpath("//*[@id=\"rewards-modal-link\"]")).click();
-        Thread.sleep(2000);
-        File screen = ((TakesScreenshot) driver).getScreenshotAs(OutputType.FILE);
-        String path = "C:\\Users\\91701\\Desktop\\it sckcet\\softwareTesting-1\\ExtentReports\\exercise1\\calculator.png";
-        FileUtils.copyFile(screen, new File(path));
-        
+
+    @Test(priority =3)
+    public void TestCase3() throws Exception{
+        wait = new WebDriverWait(driver, Duration.ofSeconds(10));
+        js = (JavascriptExecutor) driver;
+        wait.until(ExpectedConditions.visibilityOfElementLocated(By.xpath("//*[@id='onetrust-accept-btn-handler']"))).click();
+        js.executeScript("window.scrollBy(0, 10000)");
+        driver.findElement(By.linkText("B&N Membership")).click();
+        js.executeScript("window.scrollBy(0, 2000)");
+        driver.findElement(By.linkText("JOIN REWARDS")).click();
+        String msg = driver.switchTo().frame(driver.findElement(By.xpath("/html/body/div[7]/div/iframe"))).findElement(By.xpath("//*[@id=\"dialog-title\"]")).getText();
+        assertEquals(msg, "Sign in or Create an Account");
     }
-}
+
+    @AfterMethod
+    public void setdown() throws Exception{
+        driver.close();
+    }
+ }
